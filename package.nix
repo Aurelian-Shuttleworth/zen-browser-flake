@@ -73,11 +73,12 @@
     mkdir -p "$out/Applications/${applicationName}.app/Contents/Resources/distribution"
     ln -s ${policiesJson} "$out/Applications/${applicationName}.app/Contents/Resources/distribution/policies.json"
 
-    # Re-sign with correct identifier to maintain AdGuard compatibility
-    # AdGuard uses code signing identifier (not CFBundleIdentifier) to recognize apps
-    /usr/bin/codesign --force --deep --sign - \
-      --identifier "app.zen-browser.zen" \
-      "$out/Applications/${applicationName}.app"
+    # Preserve the official Apple Developer ID signature and notarization
+    # by not re-signing the app bundle. Re-signing with ad-hoc signature (-)
+    # breaks macOS WebAuthn (Touch ID, Passkeys, YubiKeys) security validation.
+    # /usr/bin/codesign --force --deep --sign - \
+    #   --identifier "app.zen-browser.zen" \
+    #   "$out/Applications/${applicationName}.app"
 
     # Use symlink path to avoid installs.ini accumulation on Nix rebuilds
     # The symlink is created by home-manager and remains stable across rebuilds

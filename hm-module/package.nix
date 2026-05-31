@@ -93,17 +93,25 @@ in {
             })
           else defaultPackage;
 
-        wrappedPackage =
-          (pkgs.wrapFirefox (getPackage isSineEnabled) {
-            icon =
-              if cfg.icon != null
-              then cfg.icon
-              else if name == "beta"
-              then "zen-browser"
-              else "zen-${name}";
-          }).override {
-            inherit (cfg) extraPrefs extraPrefsFiles nativeMessagingHosts;
-          };
+        wrappedPackage = let
+          basePackage = getPackage isSineEnabled;
+        in
+          # wrapFirefox uses __structuredAttrs = true which is incompatible
+          # with Darwin's stdenv. On macOS the wrapper adds no value anyway
+          # (no LD_LIBRARY_PATH, GTK modules, or XDG_DATA_DIRS).
+          if pkgs.stdenv.hostPlatform.isDarwin
+          then basePackage
+          else
+            (pkgs.wrapFirefox basePackage {
+              icon =
+                if cfg.icon != null
+                then cfg.icon
+                else if name == "beta"
+                then "zen-browser"
+                else "zen-${name}";
+            }).override {
+              inherit (cfg) extraPrefs extraPrefsFiles nativeMessagingHosts;
+            };
       in
         mkDefault (
           if cfg.nixGL.enable

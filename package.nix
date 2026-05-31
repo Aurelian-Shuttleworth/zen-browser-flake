@@ -230,7 +230,13 @@ in
     # Firefox uses "relrhack" to manually process relocations from a fixed offset
     patchelfFlags = ["--no-clobber-old-sections"];
 
-    preFixup = ''
+    # Stripping invalidates macOS code signatures. The installPhase re-signs the
+    # .app bundle with an ad-hoc signature, but the fixup phase's strip hook runs
+    # afterwards and targets Applications/ by default — destroying the signature.
+    # This causes "app is damaged" errors and breaks 1Password/AdGuard integration.
+    dontStrip = stdenv.hostPlatform.isDarwin;
+
+    preFixup = lib.optionalString stdenv.hostPlatform.isLinux ''
       gappsWrapperArgs+=(
         --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [ffmpeg_7]}"
         --add-flags "--name=''${MOZ_APP_LAUNCHER:-${binaryName}}"
